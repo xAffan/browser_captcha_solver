@@ -1,0 +1,12 @@
+# Production dependencies
+requests>=2.25.0
+
+# Development dependencies (install with: pip install -e ".[dev]")
+# pytest>=6.0
+# pytest-cov>=2.10.0
+# black>=21.0.0
+# flake8>=3.8.0
+# mypy>=0.800
+# twine>=3.4.0
+# wheel>=0.36.0
+# build>=0.7.0

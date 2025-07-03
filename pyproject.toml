@@ -1,0 +1,93 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "browser-captcha-solver"
+version = "1.0.0"
+authors = [
+    {name = "xAffan", email = "affanquddus1122@gmail.com"},
+]
+description = "A Python library for browser-based captcha solving"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.8"
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Topic :: Internet :: WWW/HTTP :: Browsers",
+    "Topic :: Security", 
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+]
+keywords = [
+    "captcha",
+    "recaptcha",
+    "hcaptcha",
+    "browser",
+    "automation", 
+    "solving",
+    "web-scraping",
+    "bot-protection",
+]
+dependencies = [
+    "requests>=2.25.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=6.0",
+    "pytest-asyncio",
+    "black",
+    "flake8", 
+    "mypy",
+    "twine",
+    "wheel",
+]
+
+[project.urls]
+Homepage = "https://github.com/xAffan/browser-captcha-solver"
+"Bug Tracker" = "https://github.com/xAffan/browser-captcha-solver/issues"
+Documentation = "https://github.com/xAffan/browser-captcha-solver"
+"Source Code" = "https://github.com/xAffan/browser-captcha-solver"
+
+[project.scripts]
+browser-captcha-solver = "browser_captcha_solver.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["browser_captcha_solver*"]
+exclude = ["tests*"]
+
+[tool.setuptools.package-data]
+"browser_captcha_solver" = ["*.md", "*.txt"]
+
+[tool.black]
+line-length = 88
+target-version = ["py38"]
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
