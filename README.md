@@ -15,21 +15,6 @@ A robust Python library for solving captchas through browser automation, providi
 - **🛡️ Secure**: Local-only server with automatic cleanup
 - **🎨 Easy API**: Simple, intuitive interface for developers
 
-[![PyPI version](https://badge.fury.io/py/browser-captcha-solver.svg)](https://badge.fury.io/py/browser-captcha-solver)
-[![Python versions](https://img.shields.io/pypi/pyversions/browser-captcha-solver.svg)](https://pypi.org/project/browser-captcha-solver/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
-A robust Python library for solving captchas through browser automation, providing seamless integration between web captcha services and Python applications.
-
-## Features
-
-- **🌐 Browser Integration**: Automatically opens captchas in your browser for solving
-- **🔄 Real-time Communication**: Handles browser-server communication seamlessly  
-- **🎯 Multiple Captcha Types**: Supports ReCaptcha v2, hCaptcha, and custom challenges
-- **⚡ Threaded HTTP Server**: Non-blocking server for handling multiple requests
-- **🛡️ Secure**: Local-only server with automatic cleanup
-- **🎨 Easy API**: Simple, intuitive interface for developers
-
 ## Installation
 
 ```bash
