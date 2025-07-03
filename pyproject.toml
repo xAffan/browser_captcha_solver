@@ -10,7 +10,7 @@ authors = [
 ]
 description = "A Python library for browser-based captcha solving"
 readme = "README.md"
-license = "MIT"
+license = {file = "LICENSE"}
 requires-python = ">=3.8"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
