@@ -39,13 +39,6 @@ with CaptchaSolver() as solver:
         explain="Please solve this captcha to continue",
         timeout=300
     )
-    )
-        site_key="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI",  # Test key
-        site_domain="example.com",
-        host="example.com",
-        explain="Please solve this captcha to continue",
-        timeout=300
-    )
     
     # Solve the challenge (opens browser automatically)
     result = solver.solve_challenge(challenge, timeout=300)
