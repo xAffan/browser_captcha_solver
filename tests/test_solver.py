@@ -34,12 +34,12 @@ class TestCaptchaChallenge:
     
     def test_challenge_timeout(self):
         """Test challenge timeout functionality"""
-        challenge = CaptchaChallenge(timeout=1)  # 1 second timeout
+        challenge = CaptchaChallenge(timeout=3)  # 3 second timeout for reliability
         
         assert not challenge.is_expired()
-        assert challenge.get_remaining_timeout() <= 1
+        assert challenge.get_remaining_timeout() <= 3
         
-        time.sleep(1.1)  # Wait for expiration
+        time.sleep(3.1)  # Wait for expiration
         
         assert challenge.is_expired()
         assert challenge.get_remaining_timeout() == 0
