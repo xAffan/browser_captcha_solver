@@ -2,170 +2,175 @@
 HTTP server module for handling captcha browser communication.
 """
 
-import json
-import logging
 import requests
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from socketserver import ThreadingMixIn
-from typing import Dict, TYPE_CHECKING
+from typing import Dict, TYPE_CHECKING, Any, Optional
 from urllib.parse import urlparse, parse_qs, unquote
 
 if TYPE_CHECKING:
-    from .solver import CaptchaChallenge, CaptchaSolver
+    from .solver import CaptchaChallenge
 
 
 class ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
     """Thread-per-request HTTP server"""
+
     daemon_threads = True
     allow_reuse_address = True
 
 
 class CaptchaHTTPHandler(BaseHTTPRequestHandler):
     """HTTP handler for captcha solving communication"""
-    
-    def __init__(self, *args, solver_instance=None, **kwargs):
+
+    def __init__(self, *args: Any, solver_instance: Optional[Any] = None, **kwargs: Any) -> None:
         self.solver = solver_instance
         super().__init__(*args, **kwargs)
-    
-    def log_message(self, format, *args):
+
+    def log_message(self, format: str, *args: Any) -> None:
         """Override to use our logger"""
-        if self.solver and hasattr(self.solver, 'logger'):
+        if self.solver and hasattr(self.solver, "logger"):
             self.solver.logger.info(f"{self.address_string()} - {format % args}")
-    
-    def do_GET(self):
+
+    def do_GET(self) -> None:
         """Handle GET requests"""
         try:
             parsed_url = urlparse(self.path)
             params = parse_qs(parsed_url.query)
-            
+
             # Extract challenge ID from path or params
-            challenge_id = params.get('id', [None])[0]
-            do_action = params.get('do', [None])[0]
-            
+            challenge_id = params.get("id", [None])[0]
+            do_action = params.get("do", [None])[0]
+
             if not challenge_id or not self.solver:
                 self.send_error(404)
                 return
-                
+
             challenge = self.solver.get_challenge(challenge_id)
             if not challenge:
                 self.send_error(404)
                 return
-            
-            if do_action == 'loaded':
+
+            if do_action == "loaded":
                 self._handle_browser_loaded(challenge, params)
-            elif do_action == 'canClose':
+            elif do_action == "canClose":
                 self._handle_can_close(challenge)
-            elif do_action == 'solve':
+            elif do_action == "solve":
                 self._handle_solve(challenge, params)
-            elif do_action == 'unload':
+            elif do_action == "unload":
                 self._handle_unload(challenge)
-            elif parsed_url.path.endswith('.js'):
+            elif parsed_url.path.endswith(".js"):
                 self._serve_javascript(challenge)
-            elif parsed_url.path.endswith('.css'):
+            elif parsed_url.path.endswith(".css"):
                 self._serve_css()
             else:
                 self._serve_captcha_page(challenge)
-                
+
         except Exception as e:
             if self.solver:
                 self.solver.logger.error(f"Error handling GET request: {e}")
             self.send_error(500)
-    
+
     def do_POST(self):
         """Handle POST requests for ReCaptcha proxying"""
         try:
             parsed_url = urlparse(self.path)
             params = parse_qs(parsed_url.query)
-            challenge_id = params.get('id', [None])[0]
-            
+            challenge_id = params.get("id", [None])[0]
+
             if not challenge_id or not self.solver:
                 self.send_error(404)
                 return
-                
+
             challenge = self.solver.get_challenge(challenge_id)
             if not challenge:
                 self.send_error(404)
                 return
-            
+
             # Handle ReCaptcha API proxying
-            if '/recaptcha/api2/' in self.path:
+            if "/recaptcha/api2/" in self.path:
                 self._proxy_recaptcha_request(challenge)
             else:
                 self.send_error(404)
-                
+
         except Exception as e:
             if self.solver:
                 self.solver.logger.error(f"Error handling POST request: {e}")
             self.send_error(500)
-    
+
     def _handle_browser_loaded(self, challenge: "CaptchaChallenge", params: Dict):
         """Handle browser loaded notification with positioning info"""
         browser_info = {
-            'x': params.get('x', [0])[0],
-            'y': params.get('y', [0])[0],
-            'width': params.get('w', [0])[0],
-            'height': params.get('h', [0])[0],
-            'viewport_width': params.get('vw', [0])[0],
-            'viewport_height': params.get('vh', [0])[0],
+            "x": params.get("x", [0])[0],
+            "y": params.get("y", [0])[0],
+            "width": params.get("w", [0])[0],
+            "height": params.get("h", [0])[0],
+            "viewport_width": params.get("vw", [0])[0],
+            "viewport_height": params.get("vh", [0])[0],
         }
-        
+
         if self.solver:
-            self.solver.logger.info(f"Browser loaded for challenge {challenge.id}: {browser_info}")
-        
+            self.solver.logger.info(
+                f"Browser loaded for challenge {challenge.id}: {browser_info}"
+            )
+
         self.send_response(200)
-        self.send_header('Content-Type', 'text/plain')
+        self.send_header("Content-Type", "text/plain")
         self.end_headers()
-        self.wfile.write(b'OK')
-    
+        self.wfile.write(b"OK")
+
     def _handle_can_close(self, challenge: "CaptchaChallenge"):
         """Check if browser can be closed (captcha solved or expired)"""
         can_close = challenge.solved or challenge.is_expired()
-        
+
         self.send_response(200)
-        self.send_header('Content-Type', 'text/plain')
-        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header("Content-Type", "text/plain")
+        self.send_header("Access-Control-Allow-Origin", "*")
         self.end_headers()
-        self.wfile.write(b'true' if can_close else b'false')
-    
+        self.wfile.write(b"true" if can_close else b"false")
+
     def _handle_solve(self, challenge: "CaptchaChallenge", params: Dict):
         """Handle captcha solution submission"""
-        response_token = params.get('response', [None])[0]
-        
+        response_token = params.get("response", [None])[0]
+
         if response_token:
             challenge.result = unquote(response_token)
             challenge.solved = True
             if self.solver:
-                self.solver.logger.info(f"Captcha {challenge.id} solved with token: {response_token[:50]}...")
-                
+                self.solver.logger.info(
+                    f"Captcha {challenge.id} solved with token: {response_token[:50]}..."
+                )
+
                 # Notify solver of solution
-                if hasattr(self.solver, '_on_captcha_solved'):
+                if hasattr(self.solver, "_on_captcha_solved"):
                     self.solver._on_captcha_solved(challenge)
-        
+
         self.send_response(200)
-        self.send_header('Content-Type', 'text/html; charset=utf-8')
+        self.send_header("Content-Type", "text/html; charset=utf-8")
         self.end_headers()
-        self.wfile.write(b'<html><body><h2>Captcha Solved!</h2><p>You can close this window now.</p><script>setTimeout(function(){window.close();}, 2000);</script></body></html>')
-    
+        self.wfile.write(
+            b"<html><body><h2>Captcha Solved!</h2><p>You can close this window now.</p><script>setTimeout(function(){window.close();}, 2000);</script></body></html>"
+        )
+
     def _handle_unload(self, challenge: "CaptchaChallenge"):
         """Handle browser unload event"""
         if self.solver:
             self.solver.logger.info(f"Browser unloaded for challenge {challenge.id}")
-        
+
         self.send_response(200)
-        self.send_header('Content-Type', 'text/plain')
+        self.send_header("Content-Type", "text/plain")
         self.end_headers()
-        self.wfile.write(b'OK')
-    
+        self.wfile.write(b"OK")
+
     def _serve_javascript(self, challenge: "CaptchaChallenge"):
         """Serve JavaScript for browser communication"""
         js_content = self._get_browser_captcha_js(challenge)
-        
+
         self.send_response(200)
-        self.send_header('Content-Type', 'application/javascript; charset=utf-8')
-        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header("Content-Type", "application/javascript; charset=utf-8")
+        self.send_header("Access-Control-Allow-Origin", "*")
         self.end_headers()
-        self.wfile.write(js_content.encode('utf-8'))
-    
+        self.wfile.write(js_content.encode("utf-8"))
+
     def _serve_css(self):
         """Serve CSS styles"""
         css_content = """
@@ -177,77 +182,90 @@ class CaptchaHTTPHandler(BaseHTTPRequestHandler):
         .status.solved { background: #d4edda; color: #155724; }
         .status.pending { background: #fff3cd; color: #856404; }
         """
-        
+
         self.send_response(200)
-        self.send_header('Content-Type', 'text/css; charset=utf-8')
+        self.send_header("Content-Type", "text/css; charset=utf-8")
         self.end_headers()
-        self.wfile.write(css_content.encode('utf-8'))
-    
+        self.wfile.write(css_content.encode("utf-8"))
+
     def _serve_captcha_page(self, challenge: "CaptchaChallenge"):
         """Serve the main captcha solving page"""
-        if challenge.challenge_type == 'RecaptchaV2Challenge':
+        if challenge.challenge_type == "RecaptchaV2Challenge":
             html_content = self._get_recaptcha_html(challenge)
-        elif challenge.challenge_type == 'HCaptchaChallenge':
+        elif challenge.challenge_type == "HCaptchaChallenge":
             html_content = self._get_hcaptcha_html(challenge)
         else:
             html_content = self._get_generic_captcha_html(challenge)
-        
+
         self.send_response(200)
-        self.send_header('Content-Type', 'text/html; charset=utf-8')
-        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Access-Control-Allow-Origin", "*")
         self.end_headers()
-        self.wfile.write(html_content.encode('utf-8'))
-    
+        self.wfile.write(html_content.encode("utf-8"))
+
     def _proxy_recaptcha_request(self, challenge: "CaptchaChallenge"):
         """Proxy ReCaptcha API requests to Google"""
         try:
-            content_length = int(self.headers.get('Content-Length', 0))
+            content_length = int(self.headers.get("Content-Length", 0))
             post_data = self.rfile.read(content_length)
-            
+
             # Extract the API path
             parsed_url = urlparse(self.path)
-            api_path = parsed_url.path.replace(f'/captcha/recaptchav2/{challenge.host}', '')
+            api_path = parsed_url.path.replace(
+                f"/captcha/recaptchav2/{challenge.host}", ""
+            )
             google_url = f"https://www.google.com{api_path}"
-            
+
             if parsed_url.query:
                 google_url += f"?{parsed_url.query}"
-            
+
             # Forward to Google
             headers = {
-                'Referer': f'http://{challenge.site_domain}',
-                'User-Agent': self.headers.get('User-Agent', 'Mozilla/5.0'),
-                'Content-Type': self.headers.get('Content-Type', 'application/x-www-form-urlencoded'),
+                "Referer": f"http://{challenge.site_domain}",
+                "User-Agent": self.headers.get("User-Agent", "Mozilla/5.0"),
+                "Content-Type": self.headers.get(
+                    "Content-Type", "application/x-www-form-urlencoded"
+                ),
             }
-            
-            response = requests.post(google_url, data=post_data, headers=headers, timeout=30)
-            
+
+            response = requests.post(
+                google_url, data=post_data, headers=headers, timeout=30
+            )
+
             # Modify response to work with our local server
             content = response.content
-            if response.headers.get('Content-Type', '').startswith('application/javascript'):
-                content = self._modify_recaptcha_js(content.decode('utf-8'), challenge).encode('utf-8')
-            
+            if response.headers.get("Content-Type", "").startswith(
+                "application/javascript"
+            ):
+                content = self._modify_recaptcha_js(
+                    content.decode("utf-8"), challenge
+                ).encode("utf-8")
+
             self.send_response(response.status_code)
             for header, value in response.headers.items():
-                if header.lower() not in ['connection', 'transfer-encoding']:
+                if header.lower() not in ["connection", "transfer-encoding"]:
                     self.send_header(header, value)
             self.end_headers()
             self.wfile.write(content)
-            
+
         except Exception as e:
             if self.solver:
                 self.solver.logger.error(f"Error proxying ReCaptcha request: {e}")
             self.send_error(500)
-    
-    def _modify_recaptcha_js(self, js_content: str, challenge: "CaptchaChallenge") -> str:
+
+    def _modify_recaptcha_js(
+        self, js_content: str, challenge: "CaptchaChallenge"
+    ) -> str:
         """Modify ReCaptcha JavaScript to work with local server"""
-        base_url = f"http://{self.headers.get('Host')}/captcha/recaptchav2/{challenge.host}/"
-        
+        base_url = (
+            f"http://{self.headers.get('Host')}/captcha/recaptchav2/{challenge.host}/"
+        )
+
         # Replace Google URLs with local proxy URLs
         js_content = js_content.replace(
-            'https://www.google.com/recaptcha/api2/',
-            base_url + 'proxy/'
+            "https://www.google.com/recaptcha/api2/", base_url + "proxy/"
         )
-        
+
         # Inject solution handler
         solve_handler = f"""
         function submitCaptchaSolution(token) {{
@@ -256,10 +274,10 @@ class CaptchaHTTPHandler(BaseHTTPRequestHandler):
             xhr.send();
         }}
         """
-        
+
         js_content += solve_handler
         return js_content
-    
+
     def _get_recaptcha_html(self, challenge: "CaptchaChallenge") -> str:
         """Generate ReCaptcha HTML page"""
         return f"""
@@ -312,7 +330,7 @@ class CaptchaHTTPHandler(BaseHTTPRequestHandler):
         </body>
         </html>
         """
-    
+
     def _get_hcaptcha_html(self, challenge: "CaptchaChallenge") -> str:
         """Generate hCaptcha HTML page"""
         return f"""
@@ -365,7 +383,7 @@ class CaptchaHTTPHandler(BaseHTTPRequestHandler):
         </body>
         </html>
         """
-    
+
     def _get_generic_captcha_html(self, challenge: "CaptchaChallenge") -> str:
         """Generate generic captcha HTML page"""
         return f"""
@@ -423,10 +441,10 @@ class CaptchaHTTPHandler(BaseHTTPRequestHandler):
         </body>
         </html>
         """
-    
+
     def _get_browser_captcha_js(self, challenge: "CaptchaChallenge") -> str:
         """Generate browser communication JavaScript for captcha integration"""
-        return f"""
+        return """
         // Browser positioning and communication functions
         function getOffsetSum(elem) {{
             var top = 0, left = 0;

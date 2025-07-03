@@ -32,7 +32,7 @@ Example:
 from .solver import CaptchaSolver, CaptchaChallenge, CaptchaJob
 from .server import CaptchaHTTPHandler, ThreadingHTTPServer
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 __author__ = "xAffan"
 __email__ = "affanquddus1122@gmail.com"
 __description__ = "A Python library for browser-based captcha solving"
@@ -41,8 +41,8 @@ __license__ = "MIT"
 
 __all__ = [
     "CaptchaSolver",
-    "CaptchaChallenge", 
+    "CaptchaChallenge",
     "CaptchaJob",
     "CaptchaHTTPHandler",
-    "ThreadingHTTPServer"
+    "ThreadingHTTPServer",
 ]

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "browser-captcha-solver"
-version = "1.0.0"
+version = "1.0.1"
 authors = [
     {name = "xAffan", email = "affanquddus1122@gmail.com"},
 ]
@@ -45,10 +45,11 @@ dev = [
     "pytest>=6.0",
     "pytest-asyncio",
     "black",
-    "flake8", 
+    "flake8",
     "mypy",
     "twine",
     "wheel",
+    "types-requests",
 ]
 
 [project.urls]
