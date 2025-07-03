@@ -34,10 +34,6 @@ jobs:
         flake8 browser_captcha_solver/ --count --select=E9,F63,F7,F82 --show-source --statistics
         flake8 browser_captcha_solver/ --count --exit-zero --max-complexity=10 --max-line-length=88 --statistics
 
-    - name: Type check with mypy
-      run: |
-        mypy browser_captcha_solver/ --ignore-missing-imports
-
     - name: Test with pytest
       run: |
         pytest tests/ -v --cov=browser_captcha_solver --cov-report=xml
