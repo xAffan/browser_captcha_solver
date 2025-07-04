@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "browser-captcha-solver"
-version = "1.0.1"
+version = "1.0.2"
 authors = [
     {name = "xAffan", email = "affanquddus1122@gmail.com"},
 ]
