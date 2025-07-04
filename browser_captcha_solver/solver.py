@@ -10,7 +10,7 @@ import time
 import uuid
 import webbrowser
 from datetime import datetime
-from typing import Dict, Optional, Callable
+from typing import Dict, Optional, Callable, List
 from dataclasses import dataclass, field
 
 from .server import ThreadingHTTPServer, CaptchaHTTPHandler
@@ -193,7 +193,7 @@ class CaptchaSolver:
             finally:
                 del self.solution_callbacks[challenge.id]
     
-    def list_challenges(self) -> list[CaptchaJob]:
+    def list_challenges(self) -> List[CaptchaJob]:
         """List all active challenges"""
         jobs = []
         for challenge in self.challenges.values():
