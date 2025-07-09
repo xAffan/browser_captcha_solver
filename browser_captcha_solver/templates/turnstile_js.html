@@ -1,0 +1,44 @@
+function onTurnstileSolved(token) {
+    document.getElementById('status').className = 'status solved';
+    document.getElementById('status').textContent = 'Turnstile solved! Submitting...';
+    
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', window.location.href + '&do=solve&response=' + encodeURIComponent(token), true);
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+            document.getElementById('status').textContent = 'Success! You can close this window.';
+            setTimeout(function() { window.close(); }, 2000);
+        }
+    };
+    xhr.send();
+}
+
+function onTurnstileError(error) {
+    document.getElementById('status').className = 'status error';
+    document.getElementById('status').textContent = 'Turnstile error: ' + error;
+    document.getElementById('error-info').style.display = 'block';
+    console.error('Turnstile error:', error);
+    
+    // Show specific error message
+    var errorMsg = '';
+    switch(error) {
+        case '400020':
+            errorMsg = 'Invalid site key. Please use a valid Cloudflare Turnstile site key.';
+            break;
+        case '400010':
+            errorMsg = 'Domain mismatch. The site key is not valid for this domain.';
+            break;
+        case '300010':
+            errorMsg = 'Widget failed to load. Check network connection.';
+            break;
+        default:
+            errorMsg = 'Unknown error: ' + error;
+    }
+    document.getElementById('status').textContent = 'Turnstile error: ' + errorMsg;
+}
+
+function onTurnstileExpired() {
+    document.getElementById('status').className = 'status expired';
+    document.getElementById('status').textContent = 'Turnstile challenge expired. Please refresh.';
+    setTimeout(function() { window.location.reload(); }, 3000);
+}

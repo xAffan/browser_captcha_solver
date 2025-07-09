@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{title}} - {{host}}</title>
+    <link rel="stylesheet" href="style.css">
+    {{additional_head}}
+</head>
+<body>
+    <div class="captcha-container">
+        <div class="challenge-info">
+            <h2>{{challenge_title}}</h2>
+            <p><strong>Host:</strong> {{host}}</p>
+            <p><strong>Type:</strong> {{challenge_type}}</p>
+            <p><strong>Timeout:</strong> {{remaining_timeout}} seconds</p>
+            {{additional_info}}
+        </div>
+        
+        <div id="status" class="status pending">
+            {{initial_status}}
+        </div>
+        
+        {{content}}
+        
+        {{error_info}}
+    </div>
+    
+    <script>
+        {{browser_js}}
+        {{captcha_js}}
+    </script>
+</body>
+</html>

@@ -23,7 +23,7 @@ def main(args: Optional[list] = None) -> int:
     parser.add_argument("--browser", type=str, help="Custom browser command")
 
     parser.add_argument(
-        "--version", action="version", version="browser-captcha-solver 1.0.2"
+        "--version", action="version", version="browser-captcha-solver 1.0.3"
     )
 
     subparsers = parser.add_subparsers(dest="command", help="Available commands")

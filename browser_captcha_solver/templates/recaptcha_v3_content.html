@@ -1,0 +1,32 @@
+{{demo_notice}}
+
+<div id="recaptcha-v3-container" style="text-align: center; margin: 20px 0;">
+    <button id="execute-recaptcha" class="captcha-button" onclick="executeRecaptcha()" style="
+        background: #4285f4;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        font-size: 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        transition: background-color 0.3s;
+    " onmouseover="this.style.backgroundColor='#3367d6'" onmouseout="this.style.backgroundColor='#4285f4'">
+        Execute ReCaptcha v3
+    </button>
+</div>
+
+<div id="score-info" style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 5px; display: none;">
+    <h4>About ReCaptcha v3 Scores:</h4>
+    <ul>
+        <li><strong>1.0:</strong> Very likely a good interaction</li>
+        <li><strong>0.9:</strong> Very likely a good interaction</li>
+        <li><strong>0.7:</strong> Likely a good interaction</li>
+        <li><strong>0.5:</strong> Neutral, may be good or bad</li>
+        <li><strong>0.3:</strong> Likely a bad interaction</li>
+        <li><strong>0.1:</strong> Very likely a bad interaction</li>
+        <li><strong>0.0:</strong> Very likely a bot</li>
+    </ul>
+    <p><strong>Current Score:</strong> <span id="current-score">-</span></p>
+    <p><strong>Action:</strong> {{action}}</p>
+</div>

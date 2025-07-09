@@ -1,0 +1,14 @@
+function onCaptchaSolved(token) {
+    document.getElementById('status').className = 'status solved';
+    document.getElementById('status').textContent = 'Captcha solved! Submitting...';
+    
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', window.location.href + '&do=solve&response=' + encodeURIComponent(token), true);
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+            document.getElementById('status').textContent = 'Success! You can close this window.';
+            setTimeout(function() { window.close(); }, 2000);
+        }
+    };
+    xhr.send();
+}

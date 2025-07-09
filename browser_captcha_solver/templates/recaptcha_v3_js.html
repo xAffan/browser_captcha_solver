@@ -1,0 +1,80 @@
+var recaptchaReady = false;
+var executeButton = document.getElementById('execute-recaptcha');
+
+// Wait for reCAPTCHA to be ready
+grecaptcha.ready(function() {
+    recaptchaReady = true;
+    executeButton.disabled = false;
+    document.getElementById('status').textContent = 'ReCaptcha v3 is ready. Click the button to execute the challenge.';
+    console.log('reCAPTCHA v3 is ready');
+});
+
+function executeRecaptcha() {
+    if (!recaptchaReady) {
+        document.getElementById('status').className = 'status error';
+        document.getElementById('status').textContent = 'reCAPTCHA is not ready yet. Please wait...';
+        return;
+    }
+    
+    executeButton.disabled = true;
+    executeButton.textContent = 'Executing...';
+    document.getElementById('status').className = 'status pending';
+    document.getElementById('status').textContent = 'Executing reCAPTCHA v3 challenge...';
+    
+    var action = '{{action}}';
+    
+    grecaptcha.execute('{{site_key}}', { action: action })
+        .then(function(token) {
+            console.log('reCAPTCHA v3 token received:', token);
+            
+            // Extract score if available (note: score is typically only available server-side)
+            document.getElementById('score-info').style.display = 'block';
+            document.getElementById('current-score').textContent = 'Available server-side only';
+            
+            document.getElementById('status').className = 'status solved';
+            document.getElementById('status').textContent = 'reCAPTCHA v3 executed successfully! Submitting token...';
+            
+            // Submit the token
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', window.location.href + '&do=solve&response=' + encodeURIComponent(token), true);
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    document.getElementById('status').textContent = 'Success! Token submitted. You can close this window.';
+                    executeButton.textContent = 'Success!';
+                    executeButton.style.backgroundColor = '#0f9d58';
+                    setTimeout(function() { window.close(); }, 3000);
+                } else {
+                    document.getElementById('status').className = 'status error';
+                    document.getElementById('status').textContent = 'Failed to submit token. Please try again.';
+                    executeButton.disabled = false;
+                    executeButton.textContent = 'Execute ReCaptcha v3';
+                }
+            };
+            xhr.onerror = function() {
+                document.getElementById('status').className = 'status error';
+                document.getElementById('status').textContent = 'Network error. Please try again.';
+                executeButton.disabled = false;
+                executeButton.textContent = 'Execute ReCaptcha v3';
+            };
+            xhr.send();
+        })
+        .catch(function(error) {
+            console.error('reCAPTCHA v3 error:', error);
+            document.getElementById('status').className = 'status error';
+            document.getElementById('status').textContent = 'reCAPTCHA v3 error: ' + error.message;
+            document.getElementById('error-info').style.display = 'block';
+            executeButton.disabled = false;
+            executeButton.textContent = 'Execute ReCaptcha v3';
+        });
+}
+
+// Handle script loading errors
+window.addEventListener('error', function(e) {
+    if (e.filename && e.filename.includes('recaptcha')) {
+        document.getElementById('status').className = 'status error';
+        document.getElementById('status').textContent = 'Failed to load reCAPTCHA script. Check site key and network.';
+        document.getElementById('error-info').style.display = 'block';
+        executeButton.disabled = true;
+        executeButton.textContent = 'Script Load Error';
+    }
+});
