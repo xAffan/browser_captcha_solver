@@ -302,6 +302,40 @@ except Exception as e:
     print(f"Error: {e}")
 ```
 
+## Cloudflare Turnstile Support
+
+### Cloudflare Turnstile
+
+The library supports Cloudflare Turnstile captchas with automatic error handling and user-friendly error messages.
+
+```python
+from browser_captcha_solver import CaptchaSolver
+
+with CaptchaSolver() as solver:
+    challenge = solver.create_challenge(
+        challenge_type="TurnstileChallenge",
+        site_key="1x00000000000000000000AA",  # Test key (always passes)
+        site_domain="example.com",
+        host="example.com",
+        explain="Cloudflare Turnstile verification"
+    )
+    
+    result = solver.solve_challenge(challenge, timeout=120)
+    if result:
+        print(f"Turnstile solved! Token: {result}")
+```
+
+**Getting Your Own Site Key:**
+1. Go to [Cloudflare Dashboard](https://dash.cloudflare.com)
+2. Navigate to "Turnstile" 
+3. Create a new site key for your domain
+4. Use the site key in your application
+
+**Common Errors:**
+- `400020`: Invalid site key - Use a valid Cloudflare Turnstile site key
+- `400010`: Domain mismatch - The site key doesn't match the domain
+- `300010`: Widget loading failed - Check network connection
+
 ## Development
 
 ### Setting up for Development

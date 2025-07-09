@@ -288,9 +288,32 @@ if __name__ == "__main__":
             else:
                 print("Failed to solve hCaptcha")
     
+    def test_turnstile():
+        """Test Cloudflare Turnstile solving"""
+        with CaptchaSolver(port=8082) as solver:
+            challenge = solver.create_challenge(
+                challenge_type="TurnstileChallenge",
+                site_key="1x00000000000000000000AA",  # Cloudflare test key that always passes
+                site_domain="example.com",
+                host="example.com",
+                explain="Please solve this Turnstile challenge to continue",
+                type_id="turnstile"
+            )
+            
+            print(f"Created Turnstile challenge: {challenge.id}")
+            result = solver.solve_challenge(challenge, timeout=300)
+            
+            if result:
+                print(f"Turnstile solved! Token: {result}")
+            else:
+                print("Failed to solve Turnstile")
+    
     # Run tests
     print("Testing ReCaptcha solver...")
     test_recaptcha()
     
     print("\nTesting hCaptcha solver...")
     test_hcaptcha()
+    
+    print("\nTesting Turnstile solver...")
+    test_turnstile()

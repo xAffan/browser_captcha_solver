@@ -162,13 +162,24 @@ class CaptchaHTTPHandler(BaseHTTPRequestHandler):
     def _serve_css(self):
         """Serve CSS styles"""
         css_content = """
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .captcha-container { max-width: 600px; margin: 0 auto; }
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f8f9fa; }
+        .captcha-container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         .challenge-info { background: #f5f5f5; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
         .recaptcha-frame { width: 100%; height: 500px; border: none; }
-        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
-        .status.solved { background: #d4edda; color: #155724; }
-        .status.pending { background: #fff3cd; color: #856404; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; font-weight: bold; }
+        .status.solved { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status.pending { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .status.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .status.expired { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .cf-turnstile { margin: 20px 0; }
+        button { background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; padding: 10px 15px; }
+        button:hover { background: #0056b3; }
+        textarea { border: 1px solid #ccc; border-radius: 3px; padding: 8px; font-family: monospace; width: 100%; box-sizing: border-box; }
+        #error-info { font-size: 14px; }
+        #error-info ul { margin: 10px 0; padding-left: 20px; }
+        #error-info li { margin: 5px 0; }
+        a { color: #007bff; text-decoration: none; }
+        a:hover { text-decoration: underline; }
         """
         
         self.send_response(200)
@@ -182,6 +193,8 @@ class CaptchaHTTPHandler(BaseHTTPRequestHandler):
             html_content = self._get_recaptcha_html(challenge)
         elif challenge.challenge_type == 'HCaptchaChallenge':
             html_content = self._get_hcaptcha_html(challenge)
+        elif challenge.challenge_type == 'TurnstileChallenge':
+            html_content = self._get_turnstile_html(challenge)
         else:
             html_content = self._get_generic_captcha_html(challenge)
         
@@ -358,48 +371,59 @@ class CaptchaHTTPHandler(BaseHTTPRequestHandler):
         </html>
         """
     
-    def _get_generic_captcha_html(self, challenge) -> str:
-        """Generate generic captcha HTML page"""
+    def _get_turnstile_html(self, challenge) -> str:
+        """Generate Cloudflare Turnstile HTML page"""
         return f"""
         <!DOCTYPE html>
         <html>
         <head>
-            <title>Captcha Challenge - {challenge.host}</title>
+            <title>Cloudflare Turnstile Challenge - {challenge.host}</title>
             <link rel="stylesheet" href="style.css">
+            <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
         </head>
         <body>
             <div class="captcha-container">
                 <div class="challenge-info">
-                    <h2>Captcha Challenge</h2>
+                    <h2>Cloudflare Turnstile Challenge</h2>
                     <p><strong>Host:</strong> {challenge.host}</p>
                     <p><strong>Type:</strong> {challenge.challenge_type}</p>
-                    <p><strong>Explain:</strong> {challenge.explain}</p>
+                    <p><strong>Site Key:</strong> {challenge.site_key}</p>
                     <p><strong>Timeout:</strong> {challenge.get_remaining_timeout()} seconds</p>
+                    {f'<p><strong>Note:</strong> Using test site key. For production, get your site key from <a href="https://dash.cloudflare.com" target="_blank">Cloudflare Dashboard</a></p>' if challenge.site_key == "1x00000000000000000000AA" else ""}
                 </div>
                 
                 <div id="status" class="status pending">
-                    Manual captcha solving required...
+                    Please solve the Turnstile challenge below...
                 </div>
                 
-                <div>
-                    <textarea id="response" placeholder="Enter captcha response here..." rows="4" cols="50"></textarea><br>
-                    <button onclick="submitResponse()">Submit</button>
+                <div id="turnstile-container">
+                    <div class="cf-turnstile" 
+                         data-sitekey="{challenge.site_key}"
+                         data-callback="onTurnstileSolved"
+                         data-error-callback="onTurnstileError"
+                         data-expired-callback="onTurnstileExpired"
+                         data-theme="light"
+                         data-size="normal"></div>
+                </div>
+                
+                <div id="error-info" style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px; display: none;">
+                    <h4>Common Turnstile Errors:</h4>
+                    <ul>
+                        <li><strong>400020:</strong> Invalid site key - Use a valid Cloudflare Turnstile site key</li>
+                        <li><strong>400010:</strong> Invalid domain - Site key doesn't match the domain</li>
+                        <li><strong>300010:</strong> Widget could not be loaded - Network or script loading issue</li>
+                    </ul>
+                    <p><strong>Solution:</strong> Get a valid site key from <a href="https://dash.cloudflare.com" target="_blank">Cloudflare Dashboard</a></p>
                 </div>
             </div>
             
             <script>
-                function submitResponse() {{
-                    var response = document.getElementById('response').value;
-                    if (!response) {{
-                        alert('Please enter a response');
-                        return;
-                    }}
-                    
+                function onTurnstileSolved(token) {{
                     document.getElementById('status').className = 'status solved';
-                    document.getElementById('status').textContent = 'Submitting response...';
+                    document.getElementById('status').textContent = 'Turnstile solved! Submitting...';
                     
                     var xhr = new XMLHttpRequest();
-                    xhr.open('GET', window.location.href + '&do=solve&response=' + encodeURIComponent(response), true);
+                    xhr.open('GET', window.location.href + '&do=solve&response=' + encodeURIComponent(token), true);
                     xhr.onload = function() {{
                         if (xhr.status === 200) {{
                             document.getElementById('status').textContent = 'Success! You can close this window.';
@@ -407,6 +431,36 @@ class CaptchaHTTPHandler(BaseHTTPRequestHandler):
                         }}
                     }};
                     xhr.send();
+                }}
+                
+                function onTurnstileError(error) {{
+                    document.getElementById('status').className = 'status error';
+                    document.getElementById('status').textContent = 'Turnstile error: ' + error;
+                    document.getElementById('error-info').style.display = 'block';
+                    console.error('Turnstile error:', error);
+                    
+                    // Show specific error message
+                    var errorMsg = '';
+                    switch(error) {{
+                        case '400020':
+                            errorMsg = 'Invalid site key. Please use a valid Cloudflare Turnstile site key.';
+                            break;
+                        case '400010':
+                            errorMsg = 'Domain mismatch. The site key is not valid for this domain.';
+                            break;
+                        case '300010':
+                            errorMsg = 'Widget failed to load. Check network connection.';
+                            break;
+                        default:
+                            errorMsg = 'Unknown error: ' + error;
+                    }}
+                    document.getElementById('status').textContent = 'Turnstile error: ' + errorMsg;
+                }}
+                
+                function onTurnstileExpired() {{
+                    document.getElementById('status').className = 'status expired';
+                    document.getElementById('status').textContent = 'Turnstile challenge expired. Please refresh.';
+                    setTimeout(function() {{ window.location.reload(); }}, 3000);
                 }}
                 
                 // Browser communication script
@@ -537,13 +591,20 @@ class CaptchaHTTPHandler(BaseHTTPRequestHandler):
             }} catch (err) {{
                 closeWindowOrTab();
             }}
-        }}
-        
-        // Initialize when page loads
-        window.addEventListener('load', function() {{
-            init(document.querySelector('.g-recaptcha') || document.querySelector('.h-captcha'));
-            setTimeout(refresh, 1000);
-        }});
+        }}                // Initialize when page loads
+                window.addEventListener('load', function() {{
+                    init(document.querySelector('.cf-turnstile') || document.querySelector('.g-recaptcha') || document.querySelector('.h-captcha'));
+                    setTimeout(refresh, 1000);
+                    
+                    // Check if Turnstile loaded successfully after a delay
+                    setTimeout(function() {{
+                        var turnstileWidget = document.querySelector('.cf-turnstile');
+                        if (turnstileWidget && !turnstileWidget.innerHTML.trim()) {{
+                            console.warn('Turnstile widget appears empty - may indicate site key issue');
+                            document.getElementById('error-info').style.display = 'block';
+                        }}
+                    }}, 3000);
+                }});
         
         // Handle page unload
         window.addEventListener("beforeunload", unload);

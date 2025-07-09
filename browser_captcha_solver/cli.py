@@ -42,7 +42,7 @@ def main(args: Optional[list] = None) -> int:
     test_parser = subparsers.add_parser("test", help="Run a test captcha")
     test_parser.add_argument(
         "--type",
-        choices=["recaptcha", "hcaptcha"],
+        choices=["recaptcha", "hcaptcha", "turnstile"],
         default="recaptcha",
         help="Type of captcha to test",
     )
@@ -117,6 +117,15 @@ def cmd_test(args) -> int:
                 host="example.com",
                 explain="Test hCaptcha challenge",
                 type_id="hcaptcha",
+            )
+        elif args.type == "turnstile":
+            challenge = solver.create_challenge(
+                challenge_type="TurnstileChallenge",
+                site_key="1x00000000000000000000AA",  # Cloudflare test key that always passes
+                site_domain="example.com",
+                host="example.com",
+                explain="Test Cloudflare Turnstile challenge",
+                type_id="turnstile",
             )
 
         print(f"✓ Created {args.type} challenge: {challenge.id}")

@@ -114,6 +114,33 @@ def example_batch_processing():
         return results
 
 
+def example_cloudflare_turnstile():
+    """Example 4: Cloudflare Turnstile solving"""
+    print("\n=== Example 4: Cloudflare Turnstile ===\n")
+    
+    with CaptchaSolver() as solver:
+        challenge = solver.create_challenge(
+            challenge_type="TurnstileChallenge",
+            site_key="1x00000000000000000000AA",  # Cloudflare test key that always passes
+            site_domain="example.com",
+            host="example.com",
+            explain="Cloudflare Turnstile verification",
+            timeout=300
+        )
+        
+        print(f"✓ Created Turnstile challenge: {challenge.id}")
+        print("🌐 Opening browser for Turnstile solving...")
+        
+        result = solver.solve_challenge(challenge, timeout=120)
+        
+        if result:
+            print(f"✅ Turnstile solved! Token: {result[:50]}...")
+            return result
+        else:
+            print("❌ Turnstile solving failed")
+            return None
+
+
 if __name__ == "__main__":
     print("Browser Captcha Solver - Examples")
     print("=" * 40)
@@ -123,6 +150,7 @@ if __name__ == "__main__":
         example_basic_recaptcha()
         example_hcaptcha_with_callback()
         example_batch_processing()
+        example_cloudflare_turnstile()
         
         print("\n🎯 All examples completed!")
         print("\nNote: Examples use short timeouts for demonstration.")

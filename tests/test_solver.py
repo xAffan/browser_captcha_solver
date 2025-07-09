@@ -56,6 +56,20 @@ class TestCaptchaChallenge:
         
         assert challenge.solved
         assert challenge.result == "test-token"
+    
+    def test_turnstile_challenge_creation(self):
+        """Test Turnstile challenge creation"""
+        challenge = CaptchaChallenge(
+            challenge_type="TurnstileChallenge",
+            site_key="0x4AAAAAAABkMYinukRpHjoj",
+            site_domain="example.com",
+            host="example.com",
+            timeout=300
+        )
+        
+        assert challenge.challenge_type == "TurnstileChallenge"
+        assert challenge.site_key == "0x4AAAAAAABkMYinukRpHjoj"
+        assert not challenge.solved
 
 
 class TestCaptchaSolver:
