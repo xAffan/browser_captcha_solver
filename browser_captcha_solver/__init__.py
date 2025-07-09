@@ -7,13 +7,14 @@ offering seamless integration between web captcha services and Python applicatio
 Features:
     - Browser Integration: Automatically opens captchas in your browser
     - Real-time Communication: Handles browser-server communication seamlessly
-    - Multiple Captcha Types: Supports ReCaptcha v2, hCaptcha, and Cloudflare Turnstile
+    - Multiple Captcha Types: Supports ReCaptcha v2, ReCaptcha v3, hCaptcha, and Cloudflare Turnstile
     - Threaded HTTP Server: Non-blocking server for handling multiple requests
     - Secure: Local-only server with automatic cleanup
     - Easy API: Simple, intuitive interface for developers
 
 Supported Captcha Types:
     - RecaptchaV2Challenge: Google reCAPTCHA v2 challenges
+    - RecaptchaV3Challenge: Google reCAPTCHA v3 challenges
     - HCaptchaChallenge: hCaptcha challenges
     - TurnstileChallenge: Cloudflare Turnstile challenges
 

@@ -10,7 +10,7 @@ A robust Python library for solving captchas through browser automation, providi
 
 - **🌐 Browser Integration**: Automatically opens captchas in your browser for solving
 - **🔄 Real-time Communication**: Handles browser-server communication seamlessly  
-- **🎯 Multiple Captcha Types**: Supports ReCaptcha v2, hCaptcha, and custom challenges
+- **🎯 Multiple Captcha Types**: Supports ReCaptcha v2, ReCaptcha v3, hCaptcha, and Cloudflare Turnstile
 - **⚡ Threaded HTTP Server**: Non-blocking server for handling multiple requests
 - **🛡️ Secure**: Local-only server with automatic cleanup
 - **🎨 Easy API**: Simple, intuitive interface for developers
@@ -49,6 +49,34 @@ with CaptchaSolver() as solver:
         print("Failed to solve captcha")
 ```
 
+### ReCaptcha v3 Usage
+
+ReCaptcha v3 provides invisible verification with risk scoring. This implementation requires explicit user interaction for security and compliance.
+
+```python
+from browser_captcha_solver import CaptchaSolver
+
+with CaptchaSolver() as solver:
+    # Create a ReCaptcha v3 challenge
+    challenge = solver.create_challenge(
+        challenge_type="RecaptchaV3Challenge",
+        site_key="your-recaptcha-v3-site-key",  # Get from Google reCAPTCHA Admin
+        site_domain="your-domain.com",
+        host="your-domain.com",
+        secure_token="homepage",  # Action name (login, register, etc.)
+        timeout=300
+    )
+    
+    # Solve the challenge - user clicks "Execute ReCaptcha v3" button
+    result = solver.solve_challenge(challenge, timeout=300)
+    
+    if result:
+        print(f"reCAPTCHA v3 token: {result}")
+        # Use token for server-side verification to get risk score
+    else:
+        print("Failed to execute reCAPTCHA v3")
+```
+
 ### Advanced Usage with Callbacks
 
 ```python
@@ -76,17 +104,26 @@ with CaptchaSolver(port=8080) as solver:
 
 ### Command Line Interface
 
-The package also provides a CLI for testing and server management:
+The package also provides CLI tools for testing:
 
+```bash
+# Test ReCaptcha v3 with your site key
+python recaptcha_v3_cli.py --site-key YOUR_SITE_KEY --domain localhost --action test
+
+# Run examples
+python recaptcha_v3_example.py
+
+# Quick functionality test
+python test_recaptcha_v3.py
+```
+
+Traditional CLI (if available):
 ```bash
 # Start the server
 browser-captcha-solver start --port 8080
 
 # Test ReCaptcha solving  
 browser-captcha-solver test --type recaptcha
-
-# Test hCaptcha solving
-browser-captcha-solver test --type hcaptcha
 ```
 
 ## API Reference
@@ -190,12 +227,37 @@ challenge = solver.create_challenge(
 )
 ```
 
+### ReCaptcha v3
+
+```python
+challenge = solver.create_challenge(
+    challenge_type="RecaptchaV3Challenge",
+    site_key="your-recaptcha-v3-site-key",
+    site_domain="example.com",
+    host="example.com",
+    secure_token="homepage"  # Action name for this challenge
+)
+```
+
+**Note**: ReCaptcha v3 requires explicit user interaction in this implementation. The user needs to click a button to execute the challenge. The returned token contains a risk score (available only during server-side verification).
+
 ### hCaptcha
 
 ```python
 challenge = solver.create_challenge(
     challenge_type="HCaptchaChallenge", 
     site_key="your-hcaptcha-site-key",
+    site_domain="example.com",
+    host="example.com"
+)
+```
+
+### Cloudflare Turnstile
+
+```python
+challenge = solver.create_challenge(
+    challenge_type="TurnstileChallenge",
+    site_key="your-turnstile-site-key",
     site_domain="example.com",
     host="example.com"
 )
@@ -302,40 +364,6 @@ except Exception as e:
     print(f"Error: {e}")
 ```
 
-## Cloudflare Turnstile Support
-
-### Cloudflare Turnstile
-
-The library supports Cloudflare Turnstile captchas with automatic error handling and user-friendly error messages.
-
-```python
-from browser_captcha_solver import CaptchaSolver
-
-with CaptchaSolver() as solver:
-    challenge = solver.create_challenge(
-        challenge_type="TurnstileChallenge",
-        site_key="1x00000000000000000000AA",  # Test key (always passes)
-        site_domain="example.com",
-        host="example.com",
-        explain="Cloudflare Turnstile verification"
-    )
-    
-    result = solver.solve_challenge(challenge, timeout=120)
-    if result:
-        print(f"Turnstile solved! Token: {result}")
-```
-
-**Getting Your Own Site Key:**
-1. Go to [Cloudflare Dashboard](https://dash.cloudflare.com)
-2. Navigate to "Turnstile" 
-3. Create a new site key for your domain
-4. Use the site key in your application
-
-**Common Errors:**
-- `400020`: Invalid site key - Use a valid Cloudflare Turnstile site key
-- `400010`: Domain mismatch - The site key doesn't match the domain
-- `300010`: Widget loading failed - Check network connection
-
 ## Development
 
 ### Setting up for Development
@@ -380,6 +408,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
 
 ## Support
 

@@ -40,6 +40,11 @@ class CaptchaHTTPHandler(BaseHTTPRequestHandler):
             challenge_id = params.get('id', [None])[0]
             do_action = params.get('do', [None])[0]
             
+            # Handle CSS requests without challenge ID
+            if parsed_url.path.endswith('.css'):
+                self._serve_css()
+                return
+            
             if not challenge_id or not self.solver:
                 self.send_error(404)
                 return
@@ -191,6 +196,8 @@ class CaptchaHTTPHandler(BaseHTTPRequestHandler):
         """Serve the main captcha solving page"""
         if challenge.challenge_type == 'RecaptchaV2Challenge':
             html_content = self._get_recaptcha_html(challenge)
+        elif challenge.challenge_type == 'RecaptchaV3Challenge':
+            html_content = self._get_recaptcha_v3_html(challenge)
         elif challenge.challenge_type == 'HCaptchaChallenge':
             html_content = self._get_hcaptcha_html(challenge)
         elif challenge.challenge_type == 'TurnstileChallenge':
@@ -310,6 +317,162 @@ class CaptchaHTTPHandler(BaseHTTPRequestHandler):
                     }};
                     xhr.send();
                 }}
+                
+                // Browser communication script
+                {self._get_browser_captcha_js(challenge)}
+            </script>
+        </body>
+        </html>
+        """
+    
+    def _get_recaptcha_v3_html(self, challenge) -> str:
+        """Generate ReCaptcha v3 HTML page"""
+        return f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>ReCaptcha v3 Challenge - {challenge.host}</title>
+            <link rel="stylesheet" href="style.css">
+            <script src="https://www.google.com/recaptcha/api.js?render={challenge.site_key}"></script>
+        </head>
+        <body>
+            <div class="captcha-container">
+                <div class="challenge-info">
+                    <h2>ReCaptcha v3 Challenge</h2>
+                    <p><strong>Host:</strong> {challenge.host}</p>
+                    <p><strong>Type:</strong> {challenge.challenge_type}</p>
+                    <p><strong>Site Key:</strong> {challenge.site_key}</p>
+                    <p><strong>Timeout:</strong> {challenge.get_remaining_timeout()} seconds</p>
+                    {f'<p><strong>Note:</strong> Using demo site key. For production, get your site key from <a href="https://www.google.com/recaptcha/admin" target="_blank">Google reCAPTCHA Admin Console</a></p>' if challenge.site_key in ["6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI", "6LfD3PIbAAAAAJs_eEHvoOl75_83eXSqpPSRFJ_u", "6LfKL1EqAAAAAMa9VEj5ePJyuC3sjFr_0H6JL6qI"] else ""}
+                </div>
+                
+                <div id="status" class="status pending">
+                    ReCaptcha v3 is ready. Click the button below to execute the challenge.
+                </div>
+                
+                <div id="recaptcha-v3-container" style="text-align: center; margin: 20px 0;">
+                    <button id="execute-recaptcha" class="captcha-button" onclick="executeRecaptcha()" style="
+                        background: #4285f4;
+                        color: white;
+                        border: none;
+                        padding: 12px 24px;
+                        font-size: 16px;
+                        border-radius: 4px;
+                        cursor: pointer;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                        transition: background-color 0.3s;
+                    " onmouseover="this.style.backgroundColor='#3367d6'" onmouseout="this.style.backgroundColor='#4285f4'">
+                        Execute ReCaptcha v3
+                    </button>
+                </div>
+                
+                <div id="score-info" style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 5px; display: none;">
+                    <h4>About ReCaptcha v3 Scores:</h4>
+                    <ul>
+                        <li><strong>1.0:</strong> Very likely a good interaction</li>
+                        <li><strong>0.9:</strong> Very likely a good interaction</li>
+                        <li><strong>0.7:</strong> Likely a good interaction</li>
+                        <li><strong>0.5:</strong> Neutral, may be good or bad</li>
+                        <li><strong>0.3:</strong> Likely a bad interaction</li>
+                        <li><strong>0.1:</strong> Very likely a bad interaction</li>
+                        <li><strong>0.0:</strong> Very likely a bot</li>
+                    </ul>
+                    <p><strong>Current Score:</strong> <span id="current-score">-</span></p>
+                    <p><strong>Action:</strong> {challenge.secure_token or 'submit'}</p>
+                </div>
+                
+                <div id="error-info" style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px; display: none;">
+                    <h4>Common ReCaptcha v3 Errors:</h4>
+                    <ul>
+                        <li><strong>Invalid site key:</strong> The site key is not valid for reCAPTCHA v3</li>
+                        <li><strong>Domain mismatch:</strong> Site key doesn't match the domain</li>
+                        <li><strong>Network error:</strong> Failed to load reCAPTCHA script</li>
+                    </ul>
+                    <p><strong>Solution:</strong> Get a valid v3 site key from <a href="https://www.google.com/recaptcha/admin" target="_blank">Google reCAPTCHA Admin Console</a></p>
+                </div>
+            </div>
+            
+            <script>
+                var recaptchaReady = false;
+                var executeButton = document.getElementById('execute-recaptcha');
+                
+                // Wait for reCAPTCHA to be ready
+                grecaptcha.ready(function() {{
+                    recaptchaReady = true;
+                    executeButton.disabled = false;
+                    document.getElementById('status').textContent = 'ReCaptcha v3 is ready. Click the button to execute the challenge.';
+                    console.log('reCAPTCHA v3 is ready');
+                }});
+                
+                function executeRecaptcha() {{
+                    if (!recaptchaReady) {{
+                        document.getElementById('status').className = 'status error';
+                        document.getElementById('status').textContent = 'reCAPTCHA is not ready yet. Please wait...';
+                        return;
+                    }}
+                    
+                    executeButton.disabled = true;
+                    executeButton.textContent = 'Executing...';
+                    document.getElementById('status').className = 'status pending';
+                    document.getElementById('status').textContent = 'Executing reCAPTCHA v3 challenge...';
+                    
+                    var action = '{challenge.secure_token or 'submit'}';
+                    
+                    grecaptcha.execute('{challenge.site_key}', {{ action: action }})
+                        .then(function(token) {{
+                            console.log('reCAPTCHA v3 token received:', token);
+                            
+                            // Extract score if available (note: score is typically only available server-side)
+                            document.getElementById('score-info').style.display = 'block';
+                            document.getElementById('current-score').textContent = 'Available server-side only';
+                            
+                            document.getElementById('status').className = 'status solved';
+                            document.getElementById('status').textContent = 'reCAPTCHA v3 executed successfully! Submitting token...';
+                            
+                            // Submit the token
+                            var xhr = new XMLHttpRequest();
+                            xhr.open('GET', window.location.href + '&do=solve&response=' + encodeURIComponent(token), true);
+                            xhr.onload = function() {{
+                                if (xhr.status === 200) {{
+                                    document.getElementById('status').textContent = 'Success! Token submitted. You can close this window.';
+                                    executeButton.textContent = 'Success!';
+                                    executeButton.style.backgroundColor = '#0f9d58';
+                                    setTimeout(function() {{ window.close(); }}, 3000);
+                                }} else {{
+                                    document.getElementById('status').className = 'status error';
+                                    document.getElementById('status').textContent = 'Failed to submit token. Please try again.';
+                                    executeButton.disabled = false;
+                                    executeButton.textContent = 'Execute ReCaptcha v3';
+                                }}
+                            }};
+                            xhr.onerror = function() {{
+                                document.getElementById('status').className = 'status error';
+                                document.getElementById('status').textContent = 'Network error. Please try again.';
+                                executeButton.disabled = false;
+                                executeButton.textContent = 'Execute ReCaptcha v3';
+                            }};
+                            xhr.send();
+                        }})
+                        .catch(function(error) {{
+                            console.error('reCAPTCHA v3 error:', error);
+                            document.getElementById('status').className = 'status error';
+                            document.getElementById('status').textContent = 'reCAPTCHA v3 error: ' + error.message;
+                            document.getElementById('error-info').style.display = 'block';
+                            executeButton.disabled = false;
+                            executeButton.textContent = 'Execute ReCaptcha v3';
+                        }});
+                }}
+                
+                // Handle script loading errors
+                window.addEventListener('error', function(e) {{
+                    if (e.filename && e.filename.includes('recaptcha')) {{
+                        document.getElementById('status').className = 'status error';
+                        document.getElementById('status').textContent = 'Failed to load reCAPTCHA script. Check site key and network.';
+                        document.getElementById('error-info').style.display = 'block';
+                        executeButton.disabled = true;
+                        executeButton.textContent = 'Script Load Error';
+                    }}
+                }});
                 
                 // Browser communication script
                 {self._get_browser_captcha_js(challenge)}

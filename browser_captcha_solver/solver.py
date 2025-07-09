@@ -308,6 +308,33 @@ if __name__ == "__main__":
             else:
                 print("Failed to solve Turnstile")
     
+    def test_recaptcha_v3():
+        """Test ReCaptcha v3 solving"""
+        with CaptchaSolver(port=8083) as solver:        challenge = solver.create_challenge(
+            challenge_type="RecaptchaV3Challenge",
+            site_key="6Lcyqq8oAAAAAJE7eVJ3aZp_hnJcI6LgGdYD8lge",  # 2captcha site key
+            site_domain="example.com",
+            host="example.com",
+            explain="Please execute the reCAPTCHA v3 challenge",
+            type_id="recaptcha_v3",
+            secure_token="submit"  # This will be the action name
+        )
+        
+        print(f"Created ReCaptcha v3 challenge: {challenge.id}")
+        print(f"Challenge URL: http://localhost:8083/captcha/recaptchav3challenge/example.com/?id={challenge.id}")
+        
+        # Solve the challenge
+        def on_solved(solved_challenge):
+            print(f"reCAPTCHA v3 executed! Token: {solved_challenge.result}")
+        
+        result = solver.solve_challenge(challenge, timeout=300, callback=on_solved)
+        
+        if result:
+            print(f"Success! reCAPTCHA v3 Token: {result}")
+            print("Note: The actual score is only available on the server-side verification.")
+        else:
+            print("Failed to execute reCAPTCHA v3")
+    
     # Run tests
     print("Testing ReCaptcha solver...")
     test_recaptcha()
@@ -317,3 +344,6 @@ if __name__ == "__main__":
     
     print("\nTesting Turnstile solver...")
     test_turnstile()
+    
+    print("\nTesting ReCaptcha v3 solver...")
+    test_recaptcha_v3()

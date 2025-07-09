@@ -141,6 +141,39 @@ def example_cloudflare_turnstile():
             return None
 
 
+def example_recaptcha_v3():
+    """Example: ReCaptcha v3 solving"""
+    print("=== Example: ReCaptcha v3 Solving ===\n")
+    
+    with CaptchaSolver() as solver:
+        challenge = solver.create_challenge(
+            challenge_type="RecaptchaV3Challenge",
+            site_key="6Lcyqq8oAAAAAJE7eVJ3aZp_hnJcI6LgGdYD8lge",  # 2captcha site key
+            site_domain="example.com",
+            host="example.com",
+            explain="Test ReCaptcha v3 - click button to execute",
+            timeout=300,
+            secure_token="homepage"  # Action name
+        )
+        
+        print(f"✓ Created ReCaptcha v3 challenge: {challenge.id}")
+        print(f"✓ Server running on port: {solver.port}")
+        print("🌐 Opening browser for captcha execution...")
+        print("📝 Note: Click the 'Execute ReCaptcha v3' button in the browser")
+        
+        result = solver.solve_challenge(challenge)
+        
+        if result:
+            print(f"✅ ReCaptcha v3 executed successfully!")
+            print(f"🎯 Token received: {result[:50]}...")
+            print("📊 Score analysis available server-side only")
+        else:
+            print("❌ Failed to execute ReCaptcha v3")
+        
+        print()
+        return result
+
+
 if __name__ == "__main__":
     print("Browser Captcha Solver - Examples")
     print("=" * 40)
@@ -151,6 +184,7 @@ if __name__ == "__main__":
         example_hcaptcha_with_callback()
         example_batch_processing()
         example_cloudflare_turnstile()
+        example_recaptcha_v3()
         
         print("\n🎯 All examples completed!")
         print("\nNote: Examples use short timeouts for demonstration.")
