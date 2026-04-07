@@ -4,6 +4,9 @@
 [![Python versions](https://img.shields.io/pypi/pyversions/browser-captcha-solver.svg)](https://pypi.org/project/browser-captcha-solver/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+*update 2026
+While this library intended to integrate captchas with software to serve use cases such as download managers, it is now outdated. this is no longer maintained but the code itself can be taken as a starting point to build something new.
+
 A robust Python library for solving captchas through browser automation, providing seamless integration between web captcha services and Python applications.
 
 ## Features
